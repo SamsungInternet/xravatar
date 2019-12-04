@@ -84,6 +84,10 @@ class AvatarLoader {
       //No worries we will just have to navigate there instead to get the avatar as a URL encoded string
       const locationBits = new URL(location.href);
       location.assign(this.apiURL + '?redirect=' + encodeURIComponent(locationBits.origin + locationBits.pathname));
+      return {
+        result: false,
+        message: "Redirecting to get avatar"
+      }
     }
 
   }

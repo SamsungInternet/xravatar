@@ -31,7 +31,7 @@
             const b1 = parentEl.querySelector('#yes');
             const b2 = parentEl.querySelector('#no');
             b1.addEventListener('click', async function () {
-                const avatar = await localforage.getItem(avatarKey);
+                const avatar = JSON.stringify(await localforage.getItem(avatarKey));
                 location.href=redirectSearchParam + '?xravatar=' + btoa(avatar);
             });
             b2.addEventListener('click', function () {
