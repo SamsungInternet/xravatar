@@ -9,23 +9,73 @@
 </head>
 <body>
     <script type="module">
+        import * as Comlink from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
         import localforage from 'https://unpkg.com/localforage@1.7.3/src/localforage.js';
+
+        let parentDomain;
+        try {
+            parentDomain = window.parent.location && new URL(window.parent.location.href).host
+        } catch (e) {
+            (document.referrer && new URL(document.referrer).host) || false;
+        }
+        document.querySelector('.viewing h1').textContent = `${parentDomain} is requesting access to your avatar.`;
+
+        async function hasPermission() {
+            const savedDomains = (await localforage.getItem('saved-domains')) || [];
+            window.hasPermissionToGetAvatar = window.hasPermissionToGetAvatar || savedDomains.includes(parentDomain);
+            return window.hasPermissionToGetAvatar === true;
+        }
+
         window.addEventListener('DOMContentLoaded', async function () {
+            await hasPermission();
             const avatar = await localforage.getItem('avatar');
-            document.write(`<pre><code>${document.createTextNode(JSON.stringify(avatar, null, 2)).textContent}</code></pre>`);
-        })
+            document.querySelector('.avatar-target').textContent = 
+                `<pre><code>${document.createTextNode(JSON.stringify(avatar, null, 2)).textContent}</code></pre>`
+        });
+
+        console.log('Exposing API over Comlink')
+        Comlink.expose({
+            testVal: 'hello world',
+            hasPermission,
+            async getPermission () {
+                const parentEl = document.getElementById('yesno');
+                const b1 = parentEl.querySelector('#yes');
+                const b2 = parentEl.querySelector('#no');
+
+                return await new Promise ((resolve, reject) => {
+                    b1.addEventListener('click', function () {
+                        window.hasPermissionToGetAvatar = true;
+                        resolve();
+                    }, {once: true});
+                    b2.addEventListener('click', function () {
+                        reject(Error('Permission Denied'));
+                    }, {once: true});
+                });
+            },
+            async hasAvatar() {
+                const avatar = await localforage.getItem('avatar');
+                return !!avatar;
+            },
+            async getAvatarAsJSON() {
+                if ( await hasPermission() ) {
+                    const avatar = await localforage.getItem('avatar');
+                    return avatar;
+                } else {
+                    throw Error('No permission to retrieve avatar, run getPermission() first');
+                }
+            }
+        }, Comlink.windowEndpoint(window.parent));
     </script>
     
     <main class="container">
         <header class="viewing">
-            <h1><script>
-                document.write(new URL(document.referrer).host)
-            </script> is requesting access to your avatar.</h1>
+            <h1></h1>
         </header>
-        <section class="content">
-            <button class="oui-button">Deny</button>
-            <button class="oui-button">Allow</button>
+        <section class="content" id="yesno">
+            <button class="oui-button" id="no">Deny</button>
+            <button class="oui-button" id="yes">Allow</button>
         </section>
+        <section class="content avatar-target"></section>
     </main>
 </body>
 </html>

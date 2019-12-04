@@ -10,16 +10,17 @@
 <body>
     <script type="module">
         import { AvatarLoader } from './xravatar.js';
+        const avatarLoader = new AvatarLoader('/api.html');
+
         document.getElementById('load-avatar')
         .addEventListener('click', async function () {
-            const avatarLoader = new AvatarLoader('/api.html');
 
             // Creates an iframe to get permission or to prompt the user to make an avatar 
             let test = await avatarLoader.canLoad();
             let avatar;
-            if (test.value === false) {
+            if (test.result === false) {
                 document.querySelector('.content').textContent = test.message;
-            } else if (test.value === true) {
+            } else if (test.result === true) {
 
                 // Uses the same iframe to load the avatar
                 avatar = await avatarLoader.getAvatarAsJSON();
