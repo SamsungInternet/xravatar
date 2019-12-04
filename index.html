@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Avatar Builder</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/samsunginternet/OneUI-Web/oui-css/oui.css">
+</head>
+<body>
+    <script type="module">
+        import localforage from 'https://unpkg.com/localforage@1.7.3/src/localforage.js';
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            document.querySelector('button').addEventListener('click', async function () {
+                await localforage.setItem('avatar', {
+                    hello: "world"
+                });
+                alert('done');
+            });
+        });
+    </script>
+    
+    <main class="container">
+      <header class="viewing">
+          <h1>Avatar Builder</h1>
+      </header>
+      <section class="content">
+        <button class="oui-button">Store Value</button>
+      </section>
+    </main>
+</body>
+</html>

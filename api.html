@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Avatar API Endpoint</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/samsunginternet/OneUI-Web/oui-css/oui.css">
+</head>
+<body>
+    <script type="module">
+        import localforage from 'https://unpkg.com/localforage@1.7.3/src/localforage.js';
+        window.addEventListener('DOMContentLoaded', async function () {
+            const avatar = await localforage.getItem('avatar');
+            document.write(`<pre><code>${document.createTextNode(JSON.stringify(avatar, null, 2)).textContent}</code></pre>`);
+        })
+    </script>
+    
+    <main class="container">
+        <header class="viewing">
+            <h1><script>
+                document.write(new URL(document.referrer).host)
+            </script> is requesting access to your avatar.</h1>
+        </header>
+        <section class="content">
+            <button class="oui-button">Deny</button>
+            <button class="oui-button">Allow</button>
+        </section>
+    </main>
+</body>
+</html>
