@@ -16,20 +16,20 @@
         try {
             parentDomain = window.parent.location && new URL(window.parent.location.href).host
         } catch (e) {
-            (document.referrer && new URL(document.referrer).host) || false;
+            parentDomain = (document.referrer && new URL(document.referrer).host) || false;
         }
         document.querySelector('.viewing h1').textContent = `${parentDomain} is requesting access to your avatar.`;
 
         async function hasPermission() {
-            const savedDomains = (await localforage.getItem('saved-domains')) || [];
+            const savedDomains = (await (localforage.getItem('saved-domains').catch(() => false))) || [];
             window.hasPermissionToGetAvatar = window.hasPermissionToGetAvatar || savedDomains.includes(parentDomain);
             return window.hasPermissionToGetAvatar === true;
         }
 
         window.addEventListener('DOMContentLoaded', async function () {
             await hasPermission();
-            const avatar = await localforage.getItem('avatar');
-            document.querySelector('.avatar-target').textContent = 
+            const avatar = await localforage.getItem('avatar').catch(() => undefined);
+            document.querySelector('.avatar-target').innerHTML = 
                 `<pre><code>${document.createTextNode(JSON.stringify(avatar, null, 2)).textContent}</code></pre>`
         });
 
@@ -53,12 +53,12 @@
                 });
             },
             async hasAvatar() {
-                const avatar = await localforage.getItem('avatar');
+                const avatar = await localforage.getItem('avatar').catch(() => undefined);
                 return !!avatar;
             },
             async getAvatarAsJSON() {
                 if ( await hasPermission() ) {
-                    const avatar = await localforage.getItem('avatar');
+                    const avatar = await localforage.getItem('avatar').catch(() => undefined);
                     return avatar;
                 } else {
                     throw Error('No permission to retrieve avatar, run getPermission() first');
