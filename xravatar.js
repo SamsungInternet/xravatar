@@ -22,7 +22,7 @@ class AvatarLoader {
   async getComlink () {
     return this.comlink || await (async () => {
       const comlinkIframe = this.iframe = document.createElement('iframe');
-      comlinkIframe.setAttribute('sandbox', "allow-scripts");
+      // comlinkIframe.setAttribute('sandbox', "allow-scripts");
       comlinkIframe.setAttribute('referrerpolicy', "strict-origin");
       comlinkIframe.src = this.apiURL;
       comlinkIframe.setAttribute('style',"position: absolute; top: 5vh; left: 5vw; width: 90vw; height: 90vh; border: 2px solid var(--blue);")
