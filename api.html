@@ -70,7 +70,7 @@
                     .then(() => true)
                     .catch(() => false);
             },
-            hasPermission,
+            hasPermission: hasPermissionForParentDomain,
             async getPermission () {
                 const parentEl = document.getElementById('yesno');
                 const b1 = parentEl.querySelector('#yes');
