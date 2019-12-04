@@ -12,6 +12,14 @@
 
 import * as Comlink from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
 
+const dialogStyle = "position: absolute; top: 5vh; left: 5vw; width: 90vw; height: 90vh; border: 2px solid #0A78FC; box-shadow: 10px 10px 10px 0em rgba(0,0,0,0.5);";
+
+class XRAvatar {
+  constructor (data) {
+    this.data = data;
+  }
+}
+
 class AvatarLoader {
   constructor ( url ) {
     this.apiURL = url;
@@ -25,7 +33,7 @@ class AvatarLoader {
       comlinkIframe.setAttribute('sandbox', "allow-scripts allow-same-origin");
       comlinkIframe.setAttribute('referrerpolicy', "strict-origin");
       comlinkIframe.src = this.apiURL;
-      comlinkIframe.setAttribute('style',"position: absolute; top: 5vh; left: 5vw; width: 90vw; height: 90vh; border: 2px solid var(--blue);")
+      comlinkIframe.setAttribute('style',dialogStyle)
       comlinkIframe.style.visibility = 'hidden';
       document.body.appendChild(comlinkIframe);
       this.comlink = await new Promise((resolve, reject) => {
@@ -44,36 +52,49 @@ class AvatarLoader {
   async canLoad () {
     const api = await this.getComlink();
     console.log(await api.testVal);
-    const hasAvatar = await api.hasAvatar();
-    console.log({hasAvatar});
-    const hasPermission = await api.hasPermission();
-    console.log({hasPermission});
 
-    // Everything is all good go ahead and get the avatar
-    if (hasAvatar && hasPermission) return {result: true};
-    
-    // Something went wrong either no avatar or no permission
-    // Show the iframe
-    this.iframe.style.visibility = '';
+    if (await api.canDoLocalStorage()) {
+      const hasAvatar = await api.hasAvatar();
+      console.log({hasAvatar});
+      const hasPermission = await api.hasPermission();
+      console.log({hasPermission});
+  
+      // Everything is all good go ahead and get the avatar
+      if (hasAvatar && hasPermission) return {result: true};
+      
+      // Something went wrong either no avatar or no permission
+      // Show the iframe
+      this.iframe.style.visibility = '';
+  
+      try {
+        await api.getPermission();
+        console.log('Permission Granted!!');
+        this.iframe.style.visibility = 'hidden';
+        return {result: true};
+      } catch (e) {
+        this.iframe.style.visibility = 'hidden';
+        return {
+          result: false,
+          message: e.message
+        };
+      }
 
-    try {
-      await api.getPermission();
-      console.log('Permission Granted!!');
-      this.iframe.style.visibility = 'hidden';
-      return {result: true};
-    } catch (e) {
-      this.iframe.style.visibility = 'hidden';
-      return {
-        result: false,
-        message: e.message
-      };
+    } else {
+      // Oh dear the user agent is blocking third party storage
+      //No worries we will just have to navigate there instead to get the avatar as a URL encoded string
+      const locationBits = new URL(location.href);
+      location.assign(this.apiURL + '?redirect=' + encodeURIComponent(locationBits.origin + locationBits.pathname));
     }
 
   }
 
+  loadAvatarFromBase64(base64) {
+    return new XRAvatar(JSON.parse(atob(base64)));
+  }
+
   async getAvatarAsJSON () {
     const api = await this.getComlink();
-    return api.getAvatarAsJSON();
+    return new XRAvatar(await api.getAvatarAsJSON());
   }
 
   destroy () {

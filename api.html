@@ -11,6 +11,9 @@
     <script type="module">
         import * as Comlink from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
         import localforage from 'https://unpkg.com/localforage@1.7.3/src/localforage.js';
+        const avatarKey = 'xravatar-avatar';
+        const savedDomainsKey = 'xravatar-saved-domains'
+        let canDoLocalStorage = true;
 
         let parentDomain;
         try {
@@ -18,24 +21,55 @@
         } catch (e) {
             parentDomain = (document.referrer && new URL(document.referrer).host) || false;
         }
+
+        // In the case of a redirect hook the buttons up to do a URL change
+        const redirectSearchParam = new URLSearchParams(new URL(location.href).search).get('redirect');
+        if (redirectSearchParam) {
+            parentDomain = new URL(redirectSearchParam).host;
+
+            const parentEl = document.getElementById('yesno');
+            const b1 = parentEl.querySelector('#yes');
+            const b2 = parentEl.querySelector('#no');
+            b1.addEventListener('click', async function () {
+                const avatar = await localforage.getItem(avatarKey);
+                location.href=redirectSearchParam + '?xravatar=' + btoa(avatar);
+            });
+            b2.addEventListener('click', function () {
+                rlocation.href=redirectSearchParam
+            });
+        }
         document.querySelector('.viewing h1').textContent = `${parentDomain} is requesting access to your avatar.`;
 
-        async function hasPermission() {
-            const savedDomains = (await (localforage.getItem('saved-domains').catch(() => false))) || [];
+
+        async function hasPermissionForParentDomain() {
+            const savedDomains = (await (localforage.getItem(savedDomainsKey).catch(() => false))) || [];
             window.hasPermissionToGetAvatar = window.hasPermissionToGetAvatar || savedDomains.includes(parentDomain);
             return window.hasPermissionToGetAvatar === true;
         }
 
         window.addEventListener('DOMContentLoaded', async function () {
-            await hasPermission();
-            const avatar = await localforage.getItem('avatar').catch(() => undefined);
-            document.querySelector('.avatar-target').innerHTML = 
+
+            // Test whether localStorage is available
+            const avatar = await localforage.getItem(avatarKey).catch(() => canDoLocalStorage = false);
+            await hasPermissionForParentDomain();
+            
+            if (canDoLocalStorage) {
+                document.querySelector('.avatar-target').innerHTML = 
                 `<pre><code>${document.createTextNode(JSON.stringify(avatar, null, 2)).textContent}</code></pre>`
+            } else {
+                document.querySelector('.avatar-target').innerHTML = `<p>Can't access local storage use redirect method instead.</p>`
+            }
         });
 
         console.log('Exposing API over Comlink')
         Comlink.expose({
             testVal: 'hello world',
+            async canDoLocalStorage() {
+                return localforage
+                    .getItem(avatarKey)
+                    .then(() => true)
+                    .catch(() => false);
+            },
             hasPermission,
             async getPermission () {
                 const parentEl = document.getElementById('yesno');
@@ -53,12 +87,12 @@
                 });
             },
             async hasAvatar() {
-                const avatar = await localforage.getItem('avatar').catch(() => undefined);
+                const avatar = await localforage.getItem(avatarKey).catch(() => undefined);
                 return !!avatar;
             },
             async getAvatarAsJSON() {
-                if ( await hasPermission() ) {
-                    const avatar = await localforage.getItem('avatar').catch(() => undefined);
+                if ( await hasPermissionForParentDomain() ) {
+                    const avatar = await localforage.getItem(avatarKey).catch(() => undefined);
                     return avatar;
                 } else {
                     throw Error('No permission to retrieve avatar, run getPermission() first');
@@ -71,11 +105,11 @@
         <header class="viewing">
             <h1></h1>
         </header>
-        <section class="content" id="yesno">
+        <section class="oui-bubble" id="yesno">
             <button class="oui-button" id="no">Deny</button>
             <button class="oui-button" id="yes">Allow</button>
+            <section class="avatar-target oui-bubble-item"></section>
         </section>
-        <section class="content avatar-target"></section>
     </main>
 </body>
 </html>

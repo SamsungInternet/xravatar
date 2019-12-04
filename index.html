@@ -9,11 +9,13 @@
 </head>
 <body>
     <script type="module">
+        const avatarKey = 'xravatar-avatar';
+        const savedDomainsKey = 'xravatar-saved-domains'
         import localforage from 'https://unpkg.com/localforage@1.7.3/src/localforage.js';
 
         document.addEventListener('DOMContentLoaded', async function () {
             document.querySelector('button').addEventListener('click', async function () {
-                await localforage.setItem('avatar', {
+                await localforage.setItem(avatarKey, {
                     hello: "world"
                 });
                 alert('done');
