@@ -8,9 +8,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/samsunginternet/OneUI-Web/oui-css/oui.css">
 </head>
 <body>
+    <script src="https://unpkg.com/lzma@2.2.1/src/lzma-c.js"></script>
     <script type="module">
         import * as Comlink from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
         import localforage from 'https://unpkg.com/localforage@1.7.3/src/localforage.js';
+
         const avatarKey = 'xravatar-avatar';
         const savedDomainsKey = 'xravatar-saved-domains'
         let canDoLocalStorage = true;
@@ -24,16 +26,18 @@
 
         // In the case of a redirect hook the buttons up to do a URL change
         const redirectSearchParam = new URLSearchParams(new URL(location.href).search).get('redirect');
-        if (redirectSearchParam) {
-            parentDomain = new URL(redirectSearchParam).host;
+        if (true || redirectSearchParam) {
+            // parentDomain = new URL(redirectSearchParam).host;
 
             const parentEl = document.getElementById('yesno');
             const b1 = parentEl.querySelector('#yes');
             const b2 = parentEl.querySelector('#no');
             b1.addEventListener('click', async function () {
-                const avatar = JSON.stringify(await localforage.getItem(avatarKey));
-                location.href=redirectSearchParam + '?xravatar=' + btoa(avatar);
-            });
+                const avatarString = JSON.stringify(await localforage.getItem(avatarKey));
+                const compressed = await new Promise(resolve => window.LZMA.compress(avatarString, 6, resolve));
+                const base64 = btoa(String.fromCharCode(...compressed.map(i => i + 128)));
+                location.href=redirectSearchParam + '?xravatar=' + base64;
+            }.bind(window));
             b2.addEventListener('click', function () {
                 rlocation.href=redirectSearchParam
             });
