@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Avatar Builder</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/samsunginternet/OneUI-Web/oui-css/oui.css">
+
+</head>
+<body>
+  <div id="config"></div>
+  <canvas></canvas>
+    <script type="module">
+        import { GLTFLoader } from './lib/GLTFloader.js';
+        import * as THREE from './lib/three.js';
+        
+        var loader = new GLTFLoader();
+
+         loader.load('assets/bits.glb',
+            function ( gltf ) {
+
+             console.log(gltf)
+              var s = gltf.scene;
+              var pel = document.querySelector("#config");
+              s.children.forEach(function(c) {
+                var el = document.createElement("select");
+                var cel = document.createElement("option");
+                cel.textContent = "Select from "  + c.name;
+                cel.setAttribute("disabled", "");
+                cel.setAttribute("selected", "");
+                el.appendChild(cel);
+                c.children.forEach(function(cc) {
+                  var cel = document.createElement("option");
+                  cel.textContent = cel.value = cc.name;
+                  el.appendChild(cel);
+                });
+
+                pel.appendChild(el);
+              });
+            },
+            function ( xhr ) {
+
+              console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+
+            },
+            function ( error ) {
+
+              console.log( 'An error happened' );
+
+            }
+          );
+    </script>
+   
+</body>
+</html>
