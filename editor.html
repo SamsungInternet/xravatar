@@ -6,7 +6,27 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Avatar Builder</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/samsunginternet/OneUI-Web/oui-css/oui.css">
-
+    <style>
+        body {
+          background-color:aqua;
+        }
+        canvas {
+          position: fixed;
+          top: 0;
+          left:0;
+          width: 100vw;
+          height: 100vh;
+        }
+  
+        #config {
+          position: fixed;
+          top:0;
+          left:0;
+          width: 100vw;
+          z-index: 10;
+        }
+        
+      </style>
 </head>
 <body>
   <div id="config"></div>
@@ -17,7 +37,24 @@
         
         var loader = new GLTFLoader();
 
-         loader.load('assets/bits.glb',
+        var canvas = document.querySelector( 'canvas' );
+
+        var camera, scene, renderer, scene;
+
+        renderer = new THREE.WebGLRenderer( { canvas: canvas, antialias: true } );
+
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        scene = new THREE.Scene();
+		    camera = new THREE.PerspectiveCamera();
+
+        var group = new THREE.Group();
+    
+        scene.add(group);
+
+        group.position.set(0, 0, 5);
+        loader.load('assets/bits.glb',
             function ( gltf ) {
 
              console.log(gltf)
@@ -30,15 +67,25 @@
                 cel.setAttribute("disabled", "");
                 cel.setAttribute("selected", "");
                 el.appendChild(cel);
+                var g = new THREE.Group();
+                g.matrix.copy(c.matrix);
+                group.add(g);
                 c.children.forEach(function(cc) {
                   var cel = document.createElement("option");
                   cel.textContent = cel.value = cc.name;
                   el.appendChild(cel);
+                  cel.addEventListener("click", function() {
+                    g.children = []; // I'm a bad person I know
+                    g.add(cc.clone());
+                  });
                 });
 
                 pel.appendChild(el);
               });
+
+              init();
             },
+
             function ( xhr ) {
 
               console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
@@ -50,6 +97,10 @@
 
             }
           );
+
+          renderer.setAnimationLoop(function () {
+            renderer.render(scene, camera);
+          });
     </script>
    
 </body>
