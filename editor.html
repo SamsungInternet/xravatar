@@ -34,7 +34,10 @@
     <script type="module">
         import { GLTFLoader } from './lib/GLTFloader.js';
         import * as THREE from './lib/three.js';
-        
+        const avatarKey = 'xravatar-avatar';
+        const savedDomainsKey = 'xravatar-saved-domains'
+        import localforage from 'https://unpkg.com/localforage@1.7.3/src/localforage.js';
+
         var loader = new GLTFLoader();
 
         var canvas = document.querySelector( 'canvas' );
@@ -48,15 +51,32 @@
 
         scene = new THREE.Scene();
 		    camera = new THREE.PerspectiveCamera();
-
         var group = new THREE.Group();
     
         scene.add(group);
 
-        group.position.set(0, 0, 5);
+        group.position.set(0, 0, 10);
+        
+        camera.lookAt(group.position);
+
+        var light = new THREE.DirectionalLight();
+        light.position.set(0, 10, 10);
+
+        scene.add(light);
+
+        var light2 = new THREE.DirectionalLight();
+        light2.position.set(10, 10, -10);
+
+        scene.add(light2);
+
+        var material = new THREE.MeshStandardMaterial();
+
+        var ser = {};
+        async function serialize() {
+          await localforage.setItem(avatarKey,JSON.stringify(ser));
+        }
         loader.load('assets/bits.glb',
             function ( gltf ) {
-
              console.log(gltf)
               var s = gltf.scene;
               var pel = document.querySelector("#config");
@@ -68,36 +88,34 @@
                 cel.setAttribute("selected", "");
                 el.appendChild(cel);
                 var g = new THREE.Group();
-                g.matrix.copy(c.matrix);
+                g.position.copy(c.position);
+                g.rotation.copy(c.rotation);
+                g.scale.copy(c.scale);
+                
+                g.name = c.name;
+                ser[g.name] = null;
                 group.add(g);
                 c.children.forEach(function(cc) {
                   var cel = document.createElement("option");
                   cel.textContent = cel.value = cc.name;
                   el.appendChild(cel);
-                  cel.addEventListener("click", function() {
-                    g.children = []; // I'm a bad person I know
-                    g.add(cc.clone());
-                  });
+                  
                 });
-
+                el.addEventListener("change", function () {
+                  g.children = []; // I'm a bad person I know
+                  var mesh = c.children[this.selectedIndex - 1].clone();
+                  //mesh.material = material;
+                  g.add(mesh);
+                  ser[g.name] = mesh.name;
+                  serialize();
+                });
                 pel.appendChild(el);
               });
-
-              init();
-            },
-
-            function ( xhr ) {
-
-              console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
-
-            },
-            function ( error ) {
-
-              console.log( 'An error happened' );
 
             }
           );
 
+          
           renderer.setAnimationLoop(function () {
             renderer.render(scene, camera);
           });
