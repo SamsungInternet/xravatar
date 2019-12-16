@@ -7,7 +7,7 @@ import builtins from 'rollup-plugin-node-builtins';
 
 export default {
 	output: {
-	  format: 'iife',
+	  format: 'esm',
 	  name: 'XRAvatar'
     },
 	plugins: [
