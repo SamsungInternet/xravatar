@@ -6,137 +6,126 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Avatar Builder</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/samsunginternet/OneUI-Web/oui-css/oui.css">
+    <style>
+        body {
+          background-color:aqua;
+        }
+        canvas {
+          position: fixed;
+          top: 0;
+          left:0;
+          width: 100vw;
+          height: 100vh;
+        }
+  
+        #config {
+          position: fixed;
+          top:0;
+          left:0;
+          width: 100vw;
+          z-index: 10;
+        }
+        
+      </style>
 </head>
 <body>
+  <div id="config"></div>
+  <canvas></canvas>
     <script type="module">
+        import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+        import {
+          WebGLRenderer,
+          Scene,
+          PerspectiveCamera,
+          Group,
+          DirectionalLight,
+          MeshStandardMaterial,
+        } from './node_modules/three/build/three.module.js';
+
         const avatarKey = 'xravatar-avatar';
         const savedDomainsKey = 'xravatar-saved-domains'
         import localforage from 'https://unpkg.com/localforage@1.7.3/src/localforage.js';
 
-        document.addEventListener('DOMContentLoaded', async function () {
-            document.querySelector('button').addEventListener('click', async function () {
-                await localforage.setItem(avatarKey, {
-  "javascript": {
-    "operators": {
-      "function": {
-        "__compat": {
-          "mdn_url": "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/function",
-          "spec_url": "https://tc39.es/ecma262/#sec-function-definitions",
-          "support": {
-            "chrome": {
-              "version_added": true
-            },
-            "chrome_android": {
-              "version_added": true
-            },
-            "edge": {
-              "version_added": "12"
-            },
-            "firefox": {
-              "version_added": "1"
-            },
-            "firefox_android": {
-              "version_added": "4"
-            },
-            "ie": {
-              "version_added": "3"
-            },
-            "nodejs": {
-              "version_added": true
-            },
-            "opera": {
-              "version_added": true
-            },
-            "opera_android": {
-              "version_added": true
-            },
-            "safari": {
-              "version_added": true
-            },
-            "safari_ios": {
-              "version_added": true
-            },
-            "samsunginternet_android": {
-              "version_added": true
-            },
-            "webview_android": {
-              "version_added": true
-            }
-          },
-          "status": {
-            "experimental": false,
-            "standard_track": true,
-            "deprecated": false
-          }
-        },
-        "trailing_comma": {
-          "__compat": {
-            "description": "Trailing comma in parameters",
-            "support": {
-              "chrome": {
-                "version_added": "58"
-              },
-              "chrome_android": {
-                "version_added": "58"
-              },
-              "edge": {
-                "version_added": false
-              },
-              "firefox": {
-                "version_added": "52"
-              },
-              "firefox_android": {
-                "version_added": "52"
-              },
-              "ie": {
-                "version_added": false
-              },
-              "nodejs": {
-                "version_added": "8.0.0"
-              },
-              "opera": {
-                "version_added": "45"
-              },
-              "opera_android": {
-                "version_added": "43"
-              },
-              "safari": {
-                "version_added": false
-              },
-              "safari_ios": {
-                "version_added": false
-              },
-              "samsunginternet_android": {
-                "version_added": "7.0"
-              },
-              "webview_android": {
-                "version_added": "58"
-              }
-            },
-            "status": {
-              "experimental": false,
-              "standard_track": true,
-              "deprecated": false
-            }
-          }
-        }
-      }
-    }
-  }
-}
-);
-                alert('done');
-            });
-        });
-    </script>
+        var loader = new GLTFLoader();
+
+        var canvas = document.querySelector( 'canvas' );
+
+        var camera, scene, renderer, scene;
+
+        renderer = new WebGLRenderer( { canvas: canvas, antialias: true } );
+
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        scene = new Scene();
+		    camera = new PerspectiveCamera();
+        var group = new Group();
     
-    <main class="container">
-      <header class="viewing">
-          <h1>Avatar Builder</h1>
-      </header>
-      <section class="content">
-        <button class="oui-button">Store Value</button>
-      </section>
-    </main>
+        scene.add(group);
+
+        group.position.set(0, 0, 10);
+        
+        camera.lookAt(group.position);
+
+        var light = new DirectionalLight();
+        light.position.set(0, 10, 10);
+
+        scene.add(light);
+
+        var light2 = new DirectionalLight();
+        light2.position.set(10, 10, -10);
+
+        scene.add(light2);
+
+        var material = new MeshStandardMaterial();
+
+        var ser = {};
+        async function serialize() {
+          await localforage.setItem(avatarKey,JSON.stringify(ser));
+        }
+        loader.load('assets/bits.glb', function ( gltf ) {
+              var s = gltf.scene;
+              var pel = document.querySelector("#config");
+              s.children.forEach(function(c) {
+                var el = document.createElement("select");
+                var cel = document.createElement("option");
+                cel.textContent = "Select from "  + c.name;
+                cel.setAttribute("disabled", "");
+                cel.setAttribute("selected", "");
+                el.appendChild(cel);
+                var g = new Group();
+                g.position.copy(c.position);
+                g.rotation.copy(c.rotation);
+                g.scale.copy(c.scale);
+                
+                g.name = c.name;
+                ser[g.name] = null;
+                group.add(g);
+                c.children.forEach(function(cc) {
+                  var cel = document.createElement("option");
+                  console.log(cc.userData, cc);
+                  cel.textContent = cel.value = cc.name;
+                  el.appendChild(cel);
+                });
+                el.addEventListener("change", function () {
+                  g.children = []; // I'm a bad person I know
+                  var mesh = c.children[this.selectedIndex - 1].clone();
+                  //mesh.material = material;
+                  g.add(mesh);
+                  ser[g.name] = mesh.name;
+                  serialize();
+                });
+                pel.appendChild(el);
+              });
+
+            }
+          );
+
+          
+          renderer.setAnimationLoop(function () {
+            renderer.render(scene, camera);
+          });
+    </script>
+   
 </body>
 </html>
