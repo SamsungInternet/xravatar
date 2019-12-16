@@ -1,0 +1,32 @@
+{
+  "name": "xravatar",
+  "version": "0.0.1",
+  "description": "XR Avatar tool",
+  "main": "xravatar.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "build": "rollup -c -i lib/xravatar.js -o xravatar.min.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:samsunginternet/xravatar"
+  },
+  "author": "Ada Rose Cannon",
+  "license": "MIT",
+  "dependencies": {
+    "comlink": "^4.2.0",
+    "localforage": "^1.7.3",
+    "lzma": "^2.3.2",
+    "three": "^0.111.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^6.0.0",
+    "rollup": "^1.27.13",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-terser": "^5.1.3"
+  }
+}
