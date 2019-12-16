@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/samsunginternet/OneUI-Web/oui-css/oui.css">
 </head>
 <body>
+
+    <!-- can't be imported via esm -->
+    <script src="https://unpkg.com/lzma@2.2.1/src/lzma-c-min.js"></script>
     <script type="module">
         import {
             canDoLocalStorage,
@@ -15,6 +18,7 @@
             getSavedDomains,
             getAvatar
         } from './lib/storage.js';
+        import * as Comlink from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
 
         let parentDomain;
         try {
@@ -25,7 +29,7 @@
 
         // In the case of a redirect hook the buttons up to do a URL change
         const redirectSearchParam = new URLSearchParams(new URL(location.href).search).get('redirect');
-        if (true || redirectSearchParam) {
+        if (redirectSearchParam) {
             parentDomain = new URL(redirectSearchParam).host;
 
             const parentEl = document.getElementById('yesno');
@@ -50,6 +54,7 @@
 
         window.addEventListener('DOMContentLoaded', async function () {
             if (await canDoLocalStorage()) {
+                const avatar = await getAvatar();
                 document.querySelector('.avatar-target').innerHTML = 
                 `<pre><code>${document.createTextNode(JSON.stringify(avatar, null, 2)).textContent}</code></pre>`
             } else {
