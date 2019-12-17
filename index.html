@@ -17,22 +17,55 @@
           width: 100vw;
           height: 100vh;
         }
-  
-        #config {
-          position: fixed;
-          top:0;
-          left:0;
-          width: 100vw;
-          z-index: 10;
+        .container {
+          position: relative;
+          height: 100vh;
+        }
+        nav[role="tablist"] {
+            overflow-x: auto;
+            white-space: nowrap;
+            z-index: 2;
+        }
+
+        nav[role="tablist"] > a {
+            display: inline-block;
+        }
+
+        .tabs {
+          bottom: 0;
+          position: absolute;
+          left: 0;
+          right: 0;
+          padding-bottom: 5em;
+        }
+
+        .tabs > :not(:target):not(.default-fallback) {
+            display: none;
+        }
+
+        .tabs > :target ~ .default-fallback {
+            display: none;
         }
         
       </style>
 </head>
 <body>
-  <div id="config"></div>
-  <canvas></canvas>
+  
+  <main class="container">
+    <section class="oui-viewing">
+      <canvas></canvas>
+    </section>
+    <section>
+      <nav class="oui-tab" role="tablist" id="categorytabs">
+        <a class="oui-tab-link" href="#" role="tab"><span aria-label="Close">×</span></a>
+      </nav>
+      <section class="tabs oui-bubble" aria-live="polite" role="region" id="categorypanel">
+      </section>
+    </section>
+  </main>
     <script type="module">
         import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+        import './node_modules/localforage/dist/localforage.min.js';
         import {
           WebGLRenderer,
           Scene,
@@ -42,89 +75,91 @@
           MeshStandardMaterial,
         } from './node_modules/three/build/three.module.js';
 
-        const avatarKey = 'xravatar-avatar';
-        const savedDomainsKey = 'xravatar-saved-domains'
-        import localforage from 'https://unpkg.com/localforage@1.7.3/src/localforage.js';
+        const canvas = document.querySelector( 'canvas' );
 
-        var loader = new GLTFLoader();
+        const loader = new GLTFLoader();
 
-        var canvas = document.querySelector( 'canvas' );
-
-        var camera, scene, renderer, scene;
-
-        renderer = new WebGLRenderer( { canvas: canvas, antialias: true } );
-
+        const renderer = new WebGLRenderer( { canvas: canvas, antialias: true } );
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
 
-        scene = new Scene();
-		    camera = new PerspectiveCamera();
-        var group = new Group();
-    
+        const scene = new Scene();
+
+        const group = new Group();
+        group.position.set(0, 0, 10);
         scene.add(group);
 
-        group.position.set(0, 0, 10);
+        const light = new DirectionalLight();
+        light.position.set(0, 10, 10);
+        scene.add(light);
         
+		    const camera = new PerspectiveCamera();
         camera.lookAt(group.position);
 
-        var light = new DirectionalLight();
-        light.position.set(0, 10, 10);
-
-        scene.add(light);
-
-        var light2 = new DirectionalLight();
+        const light2 = new DirectionalLight();
         light2.position.set(10, 10, -10);
-
         scene.add(light2);
 
-        var material = new MeshStandardMaterial();
+        const material = new MeshStandardMaterial();
 
-        var ser = {};
-        async function serialize() {
-          await localforage.setItem(avatarKey,JSON.stringify(ser));
+        function hashchange() {
+          const children = Array.from(window.categorytabs.children);
+          for (const child of children) {
+            child.classList.toggle('oui-tab-link--active', new URL(child.href).hash === location.hash);
+          }
         }
-        loader.load('assets/bits.glb', function ( gltf ) {
-              var s = gltf.scene;
-              var pel = document.querySelector("#config");
-              s.children.forEach(function(c) {
-                var el = document.createElement("select");
-                var cel = document.createElement("option");
-                cel.textContent = "Select from "  + c.name;
-                cel.setAttribute("disabled", "");
-                cel.setAttribute("selected", "");
-                el.appendChild(cel);
-                var g = new Group();
-                g.position.copy(c.position);
-                g.rotation.copy(c.rotation);
-                g.scale.copy(c.scale);
-                
-                g.name = c.name;
-                ser[g.name] = null;
-                group.add(g);
-                c.children.forEach(function(cc) {
-                  var cel = document.createElement("option");
-                  console.log(cc.userData, cc);
-                  cel.textContent = cel.value = cc.name;
-                  el.appendChild(cel);
-                });
-                el.addEventListener("change", function () {
-                  g.children = []; // I'm a bad person I know
-                  var mesh = c.children[this.selectedIndex - 1].clone();
-                  //mesh.material = material;
-                  g.add(mesh);
-                  ser[g.name] = mesh.name;
-                  serialize();
-                });
-                pel.appendChild(el);
-              });
+        window.addEventListener('hashchange', hashchange, false);
 
+        (async function init() {
+          const {scene: gltfScene} = await new Promise(resolve => loader.load('assets/bits.glb', resolve));
+
+          for (const category of gltfScene.children) {
+
+            const tabEl = document.createElement('A');
+            tabEl.className="oui-tab-link";
+            tabEl.textContent = category.name;
+            tabEl.href = "#" + category.name;
+            tabEl.setAttribute("role", "tab");
+            window.categorytabs.appendChild(tabEl);
+
+            const tabPanelEl = document.createElement('fieldset');
+            tabPanelEl.setAttribute("role", "tabpanel");
+            tabPanelEl.id = category.name;
+            window.categorypanel.appendChild(tabPanelEl);
+
+            const selectEl = document.createElement("select");
+            const optionEl = document.createElement("option");
+            const parts = {};
+            optionEl.textContent = "Select from "  + category.name;
+            optionEl.setAttribute("disabled", "");
+            optionEl.setAttribute("selected", "");
+            selectEl.appendChild(optionEl);
+            tabPanelEl.appendChild(selectEl);
+
+            for (const child of category.children) {
+              const optionEl = document.createElement("option");
+              optionEl.textContent = optionEl.value = child.name;
+              parts[child.name] = child;
+              selectEl.appendChild(optionEl);
             }
-          );
 
+            selectEl.addEventListener("change", onChange.bind(parts));
+          }
+
+          function onChange(e) {
+            const parts = this;
+            const name  = e.target.value;
+            const part = parts[name];
+            console.log(part);
+          }
+
+          // Highlight the correct tab
+          hashchange();
+        }());
           
-          renderer.setAnimationLoop(function () {
-            renderer.render(scene, camera);
-          });
+        renderer.setAnimationLoop(function () {
+          renderer.render(scene, camera);
+        });
     </script>
    
 </body>
