@@ -46,6 +46,23 @@
         .tabs > :target ~ .default-fallback {
             display: none;
         }
+
+        .oui-bubble-item.button {
+          --plus-color: var(--active);
+          cursor: pointer;
+        }
+
+        .oui-bubble-item.button.disabled {
+          --plus-color: var(--inactive);
+          cursor: not-allowed;
+        }
+
+        .oui-bubble-item.button .plus {
+          color:var(--plus-color);
+          font-size: 1.8em;
+          line-height: 0.556em;
+          vertical-align: text-top;
+        }
         
       </style>
 </head>
@@ -55,16 +72,11 @@
     <section class="oui-viewing">
       <canvas></canvas>
     </section>
-    <section>
-      <nav class="oui-tab" role="tablist" id="categorytabs">
-        <a class="oui-tab-link" href="#" role="tab"><span aria-label="Close">×</span></a>
-      </nav>
-      <section class="tabs oui-bubble" aria-live="polite" role="region" id="categorypanel">
-      </section>
+    <section id="uitarget">
     </section>
   </main>
     <script type="module">
-        import { defaultValues } from './lib/schema.js'; 
+        import { renderUI } from './lib/ui.js';
         import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
         import './node_modules/localforage/dist/localforage.min.js';
         import {
@@ -75,10 +87,6 @@
           DirectionalLight,
           MeshStandardMaterial,
         } from './node_modules/three/build/three.module.js';
-
-        function xravatarIndexSort(a,b) {
-          return a.userData.xravatar_index - b.userData.xravatar_index;
-        }
 
         const canvas = document.querySelector( 'canvas' );
 
@@ -117,90 +125,18 @@
 
         (async function init() {
           const {scene: gltfScene} = await new Promise(resolve => loader.load('assets/bits.glb', resolve));
+          const renderFn = renderUI(window.uitarget, gltfScene);
+          const state = new Map();
 
-          for (const category of gltfScene.children) {
-            // Inherit default values from the schema
-            for ( const key of Object.keys(defaultValues)) {
-              category.userData[key] = (category.userData[key] === undefined ? defaultValues[key] : category.userData[key]);
+          renderFn(state);
+
+          window.categorypanels,addEventListener('change', function (e) {
+            const data = [...new FormData(document.querySelector('form')).entries()];
+            for (const [key, val] of data) {
+              state.set(key,val);
             }
-              
-            // Children inherit from their parents
-            for (const child of category.children) {
-              for ( const key of Object.keys(category.userData)) {
-                child.userData[key] = (child.userData[key] === undefined ? category.userData[key] : child.userData[key]);
-              }
-            }
-          }
-
-          for (const category of gltfScene.children.sort(xravatarIndexSort)) {
-            const parts = {};
-            const tabEl = document.createElement('A');
-            tabEl.className="oui-tab-link";
-            tabEl.textContent = category.name;
-            tabEl.href = "#" + category.name;
-            tabEl.setAttribute("role", "tab");
-            window.categorytabs.appendChild(tabEl);
-
-            const tabPanelEl = document.createElement('fieldset');
-            tabPanelEl.setAttribute("role", "tabpanel");
-            tabPanelEl.id = category.name;
-            window.categorypanel.appendChild(tabPanelEl);
-
-            // If only one (or none) items can be selected then use a drop down
-            if (category.userData.xravatar_minCount === 0 && category.userData.xravatar_maxCount === 1) {
-
-              const selectEl = document.createElement("select");
-              tabPanelEl.appendChild(selectEl);
-
-              const optionEl = document.createElement("option");
-              optionEl.textContent = "Select from "  + category.name;
-              optionEl.setAttribute("disabled", "");
-              optionEl.setAttribute("selected", "");
-              selectEl.appendChild(optionEl);
-
-              for (const child of category.children.sort(xravatarIndexSort)) {
-                const optionEl = document.createElement("option");
-                optionEl.textContent = optionEl.value = child.name;
-                parts[child.name] = child;
-                selectEl.appendChild(optionEl);
-              }
-
-              selectEl.addEventListener("change", onChange.bind(parts));
-            }
-
-            // If exactly one has to be selected use radio buttons
-            if (category.userData.xravatar_minCount === 1 && category.userData.xravatar_maxCount === 1) {
-              for (const child of category.children.sort(xravatarIndexSort)) {
-                tabPanelEl.insertAdjacentHTML('beforeEnd', `
-                  <label class="oui-label oui-container-radio">
-                    <input type="radio" class="oui-input-radio" name="${category.name}" value="${child.name}"">
-                    <span class="oui-input-text">${child.name}</span>
-                    <span class="oui-input-radio-checkmark"></span>
-                  </label>
-                `)
-              }
-            }
-
-            // If more than one can be selected use checkboxes
-            if (category.userData.xravatar_maxCount > 1) {
-              tabPanelEl.insertAdjacentHTML('beforeEnd', `
-                <ul>
-                    ${category.children.sort(xravatarIndexSort)
-                      .map(child => `<li class="oui-bubble-item" tabindex="0" role="button" style="cursor: pointer;">
-                        <span style="color:var(--primary);font-size: 1.8em;line-height: 0.556em;vertical-align: text-top;">+</span>
-                        ${child.name}</li>`
-                      ).join('')}
-                </ul>
-              `)
-            }
-          }
-
-          function onChange(e) {
-            const parts = this;
-            const name  = e.target.value;
-            const part = parts[name];
-            console.log(part);
-          }
+            renderFn(state);
+          });
 
           // Highlight the correct tab
           hashchange();
