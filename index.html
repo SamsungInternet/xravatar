@@ -64,6 +64,7 @@
     </section>
   </main>
     <script type="module">
+        import { defaultValues } from './lib/schema.js'; 
         import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
         import './node_modules/localforage/dist/localforage.min.js';
         import {
@@ -75,6 +76,10 @@
           MeshStandardMaterial,
         } from './node_modules/three/build/three.module.js';
 
+        function xravatarIndexSort(a,b) {
+          return a.userData.xravatar_index - b.userData.xravatar_index;
+        }
+
         const canvas = document.querySelector( 'canvas' );
 
         const loader = new GLTFLoader();
@@ -85,16 +90,16 @@
 
         const scene = new Scene();
 
-        const group = new Group();
-        group.position.set(0, 0, 10);
-        scene.add(group);
+        const xravatarRoot = new Group();
+        xravatarRoot.position.set(0, 0, 4);
+        scene.add(xravatarRoot);
 
         const light = new DirectionalLight();
         light.position.set(0, 10, 10);
         scene.add(light);
         
 		    const camera = new PerspectiveCamera();
-        camera.lookAt(group.position);
+        camera.lookAt(xravatarRoot.position);
 
         const light2 = new DirectionalLight();
         light2.position.set(10, 10, -10);
@@ -114,7 +119,21 @@
           const {scene: gltfScene} = await new Promise(resolve => loader.load('assets/bits.glb', resolve));
 
           for (const category of gltfScene.children) {
+            // Inherit default values from the schema
+            for ( const key of Object.keys(defaultValues)) {
+              category.userData[key] = (category.userData[key] === undefined ? defaultValues[key] : category.userData[key]);
+            }
+              
+            // Children inherit from their parents
+            for (const child of category.children) {
+              for ( const key of Object.keys(category.userData)) {
+                child.userData[key] = (child.userData[key] === undefined ? category.userData[key] : child.userData[key]);
+              }
+            }
+          }
 
+          for (const category of gltfScene.children.sort(xravatarIndexSort)) {
+            const parts = {};
             const tabEl = document.createElement('A');
             tabEl.className="oui-tab-link";
             tabEl.textContent = category.name;
@@ -127,23 +146,53 @@
             tabPanelEl.id = category.name;
             window.categorypanel.appendChild(tabPanelEl);
 
-            const selectEl = document.createElement("select");
-            const optionEl = document.createElement("option");
-            const parts = {};
-            optionEl.textContent = "Select from "  + category.name;
-            optionEl.setAttribute("disabled", "");
-            optionEl.setAttribute("selected", "");
-            selectEl.appendChild(optionEl);
-            tabPanelEl.appendChild(selectEl);
+            // If only one (or none) items can be selected then use a drop down
+            if (category.userData.xravatar_minCount === 0 && category.userData.xravatar_maxCount === 1) {
 
-            for (const child of category.children) {
+              const selectEl = document.createElement("select");
+              tabPanelEl.appendChild(selectEl);
+
               const optionEl = document.createElement("option");
-              optionEl.textContent = optionEl.value = child.name;
-              parts[child.name] = child;
+              optionEl.textContent = "Select from "  + category.name;
+              optionEl.setAttribute("disabled", "");
+              optionEl.setAttribute("selected", "");
               selectEl.appendChild(optionEl);
+
+              for (const child of category.children.sort(xravatarIndexSort)) {
+                const optionEl = document.createElement("option");
+                optionEl.textContent = optionEl.value = child.name;
+                parts[child.name] = child;
+                selectEl.appendChild(optionEl);
+              }
+
+              selectEl.addEventListener("change", onChange.bind(parts));
             }
 
-            selectEl.addEventListener("change", onChange.bind(parts));
+            // If exactly one has to be selected use radio buttons
+            if (category.userData.xravatar_minCount === 1 && category.userData.xravatar_maxCount === 1) {
+              for (const child of category.children.sort(xravatarIndexSort)) {
+                tabPanelEl.insertAdjacentHTML('beforeEnd', `
+                  <label class="oui-label oui-container-radio">
+                    <input type="radio" class="oui-input-radio" name="${category.name}" value="${child.name}"">
+                    <span class="oui-input-text">${child.name}</span>
+                    <span class="oui-input-radio-checkmark"></span>
+                  </label>
+                `)
+              }
+            }
+
+            // If more than one can be selected use checkboxes
+            if (category.userData.xravatar_maxCount > 1) {
+              tabPanelEl.insertAdjacentHTML('beforeEnd', `
+                <ul>
+                    ${category.children.sort(xravatarIndexSort)
+                      .map(child => `<li class="oui-bubble-item" tabindex="0" role="button" style="cursor: pointer;">
+                        <span style="color:var(--primary);font-size: 1.8em;line-height: 0.556em;vertical-align: text-top;">+</span>
+                        ${child.name}</li>`
+                      ).join('')}
+                </ul>
+              `)
+            }
           }
 
           function onChange(e) {
