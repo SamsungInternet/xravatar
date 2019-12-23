@@ -129,14 +129,15 @@
           const state = new Map();
 
           renderFn(state);
-
-          window.categorypanels,addEventListener('change', function (e) {
-            const data = [...new FormData(document.querySelector('form')).entries()];
-            for (const [key, val] of data) {
-              state.set(key,val);
+          const form = window.uitarget.querySelector('form');
+          form.addEventListener('input', function (e) {
+            const data = [...new FormData(this).entries()];
+            for (const [key, selectedItem] of data) {
+              state.set(key, {name: selectedItem});
             }
+            console.log(state);
             renderFn(state);
-          });
+          }, false);
 
           // Highlight the correct tab
           hashchange();
