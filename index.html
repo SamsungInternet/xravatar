@@ -8,7 +8,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/samsunginternet/OneUI-Web/oui-css/oui.css">
     <style>
         body {
-          background-color:aqua;
+          background-color: darkslategrey;
+          color: white;
         }
         canvas {
           position: fixed;
@@ -77,6 +78,7 @@
   </main>
     <script type="module">
         import { renderUI } from './lib/ui.js';
+        import { createEmptySettings, defaultValues } from './lib/schema.js';
         import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
         import './node_modules/localforage/dist/localforage.min.js';
         import {
@@ -125,6 +127,27 @@
 
         (async function init() {
           const {scene: gltfScene} = await new Promise(resolve => loader.load('assets/bits.glb', resolve));
+
+          const categories = {};
+          for (const category of gltfScene.children) {
+
+            categories[category.name] = category;
+            category.childMap = {};
+
+            // Inherit default values from the schema
+            for ( const key of Object.keys(defaultValues)) {
+              category.userData[key] = (category.userData[key] === undefined ? defaultValues[key] : category.userData[key]);
+            }
+              
+            // Children inherit from their parents
+            for (const child of category.children) {
+              category.childMap[child.name] = child;
+              for ( const key of Object.keys(category.userData)) {
+                child.userData[key] = (child.userData[key] === undefined ? category.userData[key] : child.userData[key]);
+              }
+            }
+          }
+
           const renderFn = renderUI(window.uitarget, gltfScene);
           const state = new Map();
 
@@ -133,7 +156,9 @@
           form.addEventListener('input', function (e) {
             const data = [...new FormData(this).entries()];
             for (const [key, selectedItem] of data) {
-              state.set(key, {name: selectedItem});
+              if (selectedItem) {
+                state.set(key, createEmptySettings(categories[key].childMap[selectedItem]));
+              }
             }
             console.log(state);
             renderFn(state);
