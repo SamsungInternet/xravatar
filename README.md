@@ -62,9 +62,10 @@ This will be 100% client side only.
 ## Notes
 
 * When exporting a new GLTF remember to check 'Custom Properties' in the exporter.
-* If you update the dependencies in node clear the node_modules and install only the dependencies not dev dependencies before commiting to Git.
+* If you add new npm dependencies for the client side project add them to the repo using
 
 ```
-rn -rf node_modules
-npm install --production
+git add -f node_modules/path/to/file.js 
 ```
+
+This is because `node_modules` is under gitignore and we only want to include the files which we are using on the client
