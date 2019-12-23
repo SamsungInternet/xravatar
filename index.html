@@ -9,7 +9,7 @@
     <style>
         body {
           background-color: darkslategrey;
-          color: white;
+          /* color: white; */
         }
         canvas {
           position: fixed;
@@ -78,44 +78,12 @@
   </main>
     <script type="module">
         import { renderUI } from './lib/ui.js';
+        import { renderGL } from './lib/threescene.js'
         import { createEmptySettings, defaultValues } from './lib/schema.js';
-        import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
-        import './node_modules/localforage/dist/localforage.min.js';
-        import {
-          WebGLRenderer,
-          Scene,
-          PerspectiveCamera,
-          Group,
-          DirectionalLight,
-          MeshStandardMaterial,
-        } from './node_modules/three/build/three.module.js';
-
-        const canvas = document.querySelector( 'canvas' );
+        import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+        import '/node_modules/localforage/dist/localforage.min.js';
 
         const loader = new GLTFLoader();
-
-        const renderer = new WebGLRenderer( { canvas: canvas, antialias: true } );
-        renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.setSize( window.innerWidth, window.innerHeight );
-
-        const scene = new Scene();
-
-        const xravatarRoot = new Group();
-        xravatarRoot.position.set(0, 0, 4);
-        scene.add(xravatarRoot);
-
-        const light = new DirectionalLight();
-        light.position.set(0, 10, 10);
-        scene.add(light);
-        
-		    const camera = new PerspectiveCamera();
-        camera.lookAt(xravatarRoot.position);
-
-        const light2 = new DirectionalLight();
-        light2.position.set(10, 10, -10);
-        scene.add(light2);
-
-        const material = new MeshStandardMaterial();
 
         function hashchange() {
           const children = Array.from(window.categorytabs.children);
@@ -147,30 +115,31 @@
               }
             }
           }
+          const renderUIFn = renderUI(window.uitarget, gltfScene);
+          const updateGLState = renderGL(document.querySelector('canvas'), gltfScene);
 
-          const renderFn = renderUI(window.uitarget, gltfScene);
           const state = new Map();
-
-          renderFn(state);
-          const form = window.uitarget.querySelector('form');
-          form.addEventListener('input', function (e) {
+          function updateState() {
             const data = [...new FormData(this).entries()];
+            console.log(data);
             for (const [key, selectedItem] of data) {
               if (selectedItem) {
                 state.set(key, createEmptySettings(categories[key].childMap[selectedItem]));
+              } else {
+                state.clear(key);
               }
             }
+            renderUIFn(state);
+            updateGLState(state);
             console.log(state);
-            renderFn(state);
-          }, false);
+          }
+          updateState();
+          const form = window.uitarget.querySelector('form');
+          form.addEventListener('input', updateState, false);
 
           // Highlight the correct tab
           hashchange();
         }());
-          
-        renderer.setAnimationLoop(function () {
-          renderer.render(scene, camera);
-        });
     </script>
    
 </body>
