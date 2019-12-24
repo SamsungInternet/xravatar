@@ -85,14 +85,6 @@
 
         const loader = new GLTFLoader();
 
-        function hashchange() {
-          const children = Array.from(window.categorytabs.children);
-          for (const child of children) {
-            child.classList.toggle('oui-tab-link--active', new URL(child.href).hash === location.hash);
-          }
-        }
-        window.addEventListener('hashchange', hashchange, false);
-
         (async function init() {
           const {scene: gltfScene} = await new Promise(resolve => loader.load('assets/bits.glb', resolve));
 
@@ -119,26 +111,28 @@
           const updateGLState = renderGL(document.querySelector('canvas'), gltfScene);
 
           const state = new Map();
+          const {categoryForms, categoryTabs} = renderUIFn(state);
           function updateState() {
-            const data = [...new FormData(this).entries()];
-            console.log(data);
-            for (const [key, selectedItem] of data) {
+            const form = this;
+            const data = [...new FormData(form).entries()];
+            for (const [category, selectedItem] of data) {
               if (selectedItem) {
-                state.set(key, createEmptySettings(categories[key].childMap[selectedItem]));
+                const setting = createEmptySettings(categories[category].childMap[selectedItem]);
+                console.log(`Setting ${category} to ${JSON.stringify(setting)}`);
+                state.set(category, setting);
               } else {
-                state.clear(key);
+                state.delete(category);
               }
             }
             renderUIFn(state);
             updateGLState(state);
-            console.log(state);
           }
-          updateState();
-          const form = window.uitarget.querySelector('form');
-          form.addEventListener('input', updateState, false);
-
-          // Highlight the correct tab
-          hashchange();
+          for (const form of categoryForms) {
+            form.addEventListener('input', updateState, false);
+            // Render the first time, with default elements
+            updateState.bind(form)();
+          }
+          window.addEventListener('hashchange', () => renderUIFn(state), false);
         }());
     </script>
    
