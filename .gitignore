@@ -1,0 +1,3 @@
+# Ignore folders goes here
+node_modules/
+/**/*.blend1

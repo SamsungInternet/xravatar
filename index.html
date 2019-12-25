@@ -6,137 +6,135 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Avatar Builder</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/samsunginternet/OneUI-Web/oui-css/oui.css">
+    <style>
+        body {
+          background-color: darkslategrey;
+          /* color: white; */
+        }
+        canvas {
+          position: fixed;
+          top: 0;
+          left:0;
+          width: 100vw;
+          height: 100vh;
+        }
+        .container {
+          position: relative;
+          height: 100vh;
+        }
+        nav[role="tablist"] {
+            overflow-x: auto;
+            white-space: nowrap;
+            z-index: 2;
+        }
+
+        nav[role="tablist"] > a {
+            display: inline-block;
+        }
+
+        .tabs {
+          bottom: 0;
+          position: absolute;
+          left: 0;
+          right: 0;
+          padding-bottom: 5em;
+        }
+
+        .tabs > :not(:target):not(.default-fallback) {
+            display: none;
+        }
+
+        .tabs > :target ~ .default-fallback {
+            display: none;
+        }
+
+        .oui-bubble-item.button {
+          --plus-color: var(--active);
+          cursor: pointer;
+        }
+
+        .oui-bubble-item.button.disabled {
+          --plus-color: var(--inactive);
+          cursor: not-allowed;
+        }
+
+        .oui-bubble-item.button .plus {
+          color:var(--plus-color);
+          font-size: 1.8em;
+          line-height: 0.556em;
+          vertical-align: text-top;
+        }
+        
+      </style>
 </head>
 <body>
+  
+  <main class="container">
+    <section class="oui-viewing">
+      <canvas></canvas>
+    </section>
+    <section id="uitarget">
+    </section>
+  </main>
     <script type="module">
-        const avatarKey = 'xravatar-avatar';
-        const savedDomainsKey = 'xravatar-saved-domains'
-        import localforage from 'https://unpkg.com/localforage@1.7.3/src/localforage.js';
+        import { renderUI } from './lib/ui.js';
+        import { renderGL } from './lib/threescene.js'
+        import { createEmptySettings, defaultValues } from './lib/schema.js';
+        import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+        import '/node_modules/localforage/dist/localforage.min.js';
 
-        document.addEventListener('DOMContentLoaded', async function () {
-            document.querySelector('button').addEventListener('click', async function () {
-                await localforage.setItem(avatarKey, {
-  "javascript": {
-    "operators": {
-      "function": {
-        "__compat": {
-          "mdn_url": "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/function",
-          "spec_url": "https://tc39.es/ecma262/#sec-function-definitions",
-          "support": {
-            "chrome": {
-              "version_added": true
-            },
-            "chrome_android": {
-              "version_added": true
-            },
-            "edge": {
-              "version_added": "12"
-            },
-            "firefox": {
-              "version_added": "1"
-            },
-            "firefox_android": {
-              "version_added": "4"
-            },
-            "ie": {
-              "version_added": "3"
-            },
-            "nodejs": {
-              "version_added": true
-            },
-            "opera": {
-              "version_added": true
-            },
-            "opera_android": {
-              "version_added": true
-            },
-            "safari": {
-              "version_added": true
-            },
-            "safari_ios": {
-              "version_added": true
-            },
-            "samsunginternet_android": {
-              "version_added": true
-            },
-            "webview_android": {
-              "version_added": true
+        const loader = new GLTFLoader();
+
+        (async function init() {
+          const {scene: gltfScene} = await new Promise(resolve => loader.load('assets/bits.glb', resolve));
+
+          const categories = {};
+          for (const category of gltfScene.children) {
+
+            categories[category.name] = category;
+            category.childMap = {};
+
+            // Inherit default values from the schema
+            for ( const key of Object.keys(defaultValues)) {
+              category.userData[key] = (category.userData[key] === undefined ? defaultValues[key] : category.userData[key]);
             }
-          },
-          "status": {
-            "experimental": false,
-            "standard_track": true,
-            "deprecated": false
-          }
-        },
-        "trailing_comma": {
-          "__compat": {
-            "description": "Trailing comma in parameters",
-            "support": {
-              "chrome": {
-                "version_added": "58"
-              },
-              "chrome_android": {
-                "version_added": "58"
-              },
-              "edge": {
-                "version_added": false
-              },
-              "firefox": {
-                "version_added": "52"
-              },
-              "firefox_android": {
-                "version_added": "52"
-              },
-              "ie": {
-                "version_added": false
-              },
-              "nodejs": {
-                "version_added": "8.0.0"
-              },
-              "opera": {
-                "version_added": "45"
-              },
-              "opera_android": {
-                "version_added": "43"
-              },
-              "safari": {
-                "version_added": false
-              },
-              "safari_ios": {
-                "version_added": false
-              },
-              "samsunginternet_android": {
-                "version_added": "7.0"
-              },
-              "webview_android": {
-                "version_added": "58"
+              
+            // Children inherit from their parents
+            for (const child of category.children) {
+              category.childMap[child.name] = child;
+              for ( const key of Object.keys(category.userData)) {
+                child.userData[key] = (child.userData[key] === undefined ? category.userData[key] : child.userData[key]);
               }
-            },
-            "status": {
-              "experimental": false,
-              "standard_track": true,
-              "deprecated": false
             }
           }
-        }
-      }
-    }
-  }
-}
-);
-                alert('done');
-            });
-        });
+          const renderUIFn = renderUI(window.uitarget, gltfScene);
+          const updateGLState = renderGL(document.querySelector('canvas'), gltfScene);
+
+          const state = new Map();
+          const {categoryForms, categoryTabs} = renderUIFn(state);
+          function updateState() {
+            const form = this;
+            const data = [...new FormData(form).entries()];
+            for (const [category, selectedItem] of data) {
+              if (selectedItem) {
+                const setting = createEmptySettings(categories[category].childMap[selectedItem]);
+                console.log(`Setting ${category} to ${JSON.stringify(setting)}`);
+                state.set(category, setting);
+              } else {
+                state.delete(category);
+              }
+            }
+            renderUIFn(state);
+            updateGLState(state);
+          }
+          for (const form of categoryForms) {
+            form.addEventListener('input', updateState, false);
+            // Render the first time, with default elements
+            updateState.bind(form)();
+          }
+          window.addEventListener('hashchange', () => renderUIFn(state), false);
+        }());
     </script>
-    
-    <main class="container">
-      <header class="viewing">
-          <h1>Avatar Builder</h1>
-      </header>
-      <section class="content">
-        <button class="oui-button">Store Value</button>
-      </section>
-    </main>
+   
 </body>
 </html>

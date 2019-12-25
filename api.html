@@ -8,14 +8,17 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/samsunginternet/OneUI-Web/oui-css/oui.css">
 </head>
 <body>
+
+    <!-- can't be imported via esm -->
     <script src="https://unpkg.com/lzma@2.2.1/src/lzma-c-min.js"></script>
     <script type="module">
+        import {
+            canDoLocalStorage,
+            getAvatarCompressed,
+            getSavedDomains,
+            getAvatar
+        } from './lib/storage.js';
         import * as Comlink from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
-        import localforage from 'https://unpkg.com/localforage@1.7.3/src/localforage.js';
-
-        const avatarKey = 'xravatar-avatar';
-        const savedDomainsKey = 'xravatar-saved-domains'
-        let canDoLocalStorage = true;
 
         let parentDomain;
         try {
@@ -26,38 +29,32 @@
 
         // In the case of a redirect hook the buttons up to do a URL change
         const redirectSearchParam = new URLSearchParams(new URL(location.href).search).get('redirect');
-        if (true || redirectSearchParam) {
-            // parentDomain = new URL(redirectSearchParam).host;
+        if (redirectSearchParam) {
+            parentDomain = new URL(redirectSearchParam).host;
 
             const parentEl = document.getElementById('yesno');
             const b1 = parentEl.querySelector('#yes');
             const b2 = parentEl.querySelector('#no');
             b1.addEventListener('click', async function () {
-                const avatarString = JSON.stringify(await localforage.getItem(avatarKey));
-                const compressed = await new Promise(resolve => window.LZMA.compress(avatarString, 6, resolve));
-                const base64 = btoa(String.fromCharCode(...compressed.map(i => i + 128)));
-                location.href=redirectSearchParam + '?xravatar=' + base64;
+                const avatarString = await getAvatarCompressed();
+                location.href=redirectSearchParam + '?xravatar=' + avatarString;
             }.bind(window));
             b2.addEventListener('click', function () {
-                rlocation.href=redirectSearchParam
+                location.href=redirectSearchParam
             });
         }
+
         document.querySelector('.viewing h1').textContent = `${parentDomain} is requesting access to your avatar.`;
 
-
         async function hasPermissionForParentDomain() {
-            const savedDomains = (await (localforage.getItem(savedDomainsKey).catch(() => false))) || [];
+            const savedDomains = await getSavedDomains();
             window.hasPermissionToGetAvatar = window.hasPermissionToGetAvatar || savedDomains.includes(parentDomain);
             return window.hasPermissionToGetAvatar === true;
         }
 
         window.addEventListener('DOMContentLoaded', async function () {
-
-            // Test whether localStorage is available
-            const avatar = await localforage.getItem(avatarKey).catch(() => canDoLocalStorage = false);
-            await hasPermissionForParentDomain();
-            
-            if (canDoLocalStorage) {
+            if (await canDoLocalStorage()) {
+                const avatar = await getAvatar();
                 document.querySelector('.avatar-target').innerHTML = 
                 `<pre><code>${document.createTextNode(JSON.stringify(avatar, null, 2)).textContent}</code></pre>`
             } else {
@@ -68,12 +65,7 @@
         console.log('Exposing API over Comlink')
         Comlink.expose({
             testVal: 'hello world',
-            async canDoLocalStorage() {
-                return localforage
-                    .getItem(avatarKey)
-                    .then(() => true)
-                    .catch(() => false);
-            },
+            canDoLocalStorage: canDoLocalStorage,
             hasPermission: hasPermissionForParentDomain,
             async getPermission () {
                 const parentEl = document.getElementById('yesno');
@@ -91,13 +83,12 @@
                 });
             },
             async hasAvatar() {
-                const avatar = await localforage.getItem(avatarKey).catch(() => undefined);
+                const avatar = await getAvatar();
                 return !!avatar;
             },
             async getAvatarAsJSON() {
                 if ( await hasPermissionForParentDomain() ) {
-                    const avatar = await localforage.getItem(avatarKey).catch(() => undefined);
-                    return avatar;
+                    return getAvatar();
                 } else {
                     throw Error('No permission to retrieve avatar, run getPermission() first');
                 }
