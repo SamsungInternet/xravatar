@@ -82,12 +82,14 @@
         import { createEmptySettings, defaultValues } from './lib/schema.js';
         import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
         import { storeAvatar, getAvatar } from './lib/storage.js';
+        import { init as touchInit } from './lib/touch.js';
         import './node_modules/localforage/dist/localforage.min.js';
 
         const loader = new GLTFLoader();
 
         (async function init() {
           const {scene: gltfScene} = await new Promise(resolve => loader.load('assets/bits.glb', resolve));
+          const canvas = document.querySelector('canvas');
 
           const categories = {};
           for (const category of gltfScene.children) {
@@ -109,7 +111,7 @@
             }
           }
           const renderUIFn = renderUI(window.uitarget, gltfScene);
-          const updateGLState = renderGL(document.querySelector('canvas'), gltfScene);
+          const updateGLState = renderGL(canvas, gltfScene);
 
           const state = new Map(Object.entries(await getAvatar() || {}));
           const {categoryForms, categoryTabs} = renderUIFn(state);
@@ -134,6 +136,7 @@
             // Render the first time, with default elements
             updateState.bind(form)();
           }
+          touchInit(canvas, state);
           window.addEventListener('hashchange', () => renderUIFn(state), false);
         }());
     </script>
