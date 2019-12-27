@@ -10,7 +10,7 @@
 <body>
 
     <!-- can't be imported via esm -->
-    <script src="https://unpkg.com/lzma@2.2.1/src/lzma-c-min.js"></script>
+    <script src="./node_modules/lzma/src/lzma-c-min.js"></script>
     <script type="module">
         import {
             canDoLocalStorage,
@@ -18,7 +18,7 @@
             getSavedDomains,
             getAvatar
         } from './lib/storage.js';
-        import * as Comlink from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
+        import * as Comlink from "./node_modules/comlink/dist/esm/comlink.min.mjs";
 
         let parentDomain;
         try {
