@@ -7,7 +7,7 @@
     "lib": "lib"
   },
   "scripts": {
-    "build": "rollup -c -i lib/xravatar.js -o xravatar.min.js",
+    "build": "rollup -m -c -i lib/xravatar.js -o ./dist/xravatar.js; rollup -c rollup.config.min.js -m -i lib/xravatar.js -o ./dist/xravatar.min.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
