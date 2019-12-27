@@ -81,6 +81,7 @@
         import { renderGL } from './lib/threescene.js'
         import { createEmptySettings, defaultValues } from './lib/schema.js';
         import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+        import { storeAvatar, getAvatar } from './lib/storage.js';
         import './node_modules/localforage/dist/localforage.min.js';
 
         const loader = new GLTFLoader();
@@ -110,9 +111,9 @@
           const renderUIFn = renderUI(window.uitarget, gltfScene);
           const updateGLState = renderGL(document.querySelector('canvas'), gltfScene);
 
-          const state = new Map();
+          const state = new Map(Object.entries(await getAvatar() || {}));
           const {categoryForms, categoryTabs} = renderUIFn(state);
-          function updateState() {
+          async function updateState() {
             const form = this;
             const data = [...new FormData(form).entries()];
             for (const [category, selectedItem] of data) {
@@ -126,6 +127,7 @@
             }
             renderUIFn(state);
             updateGLState(state);
+            await storeAvatar(Object.fromEntries(state.entries()));
           }
           for (const form of categoryForms) {
             form.addEventListener('input', updateState, false);
