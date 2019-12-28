@@ -110,7 +110,9 @@
               }
             }
           }
-          const renderUIFn = renderUI(window.uitarget, gltfScene);
+          const renderUIFn = renderUI(window.uitarget, gltfScene, {
+            updateState
+          });
           const updateGLState = renderGL(canvas, gltfScene);
 
           const state = await getState();
@@ -119,12 +121,18 @@
           const {categoryForms, categoryTabs} = renderUIFn(state);
           async function updateState() {
             const form = this;
-
-            // Any items beginning with '_' are ignored
             const data = new FormData(form).entries();
             for (const [category, selectedItem] of data) {
               if (selectedItem) {
-                const setting = createEmptySettings(categories[category].childMap[selectedItem]);
+                const setting = state.get(category) || createEmptySettings(categories[category].childMap[selectedItem]);
+                if (setting.name !== selectedItem) {
+                  Object.assign(setting, createEmptySettings(categories[category].childMap[selectedItem]));
+                }
+                const form = this.querySelector('form');
+                if (form) {
+                  const settingsFormData = Object.fromEntries(new FormData(form).entries());
+                  setting.data = settingsFormData;
+                }
                 console.log(`Setting ${category} to ${JSON.stringify(setting)}`);
                 state.set(category, setting);
               } else {
@@ -136,8 +144,6 @@
             await storeAvatar(Object.fromEntries(state.entries()));
           }
           for (const form of categoryForms) {
-            form.addEventListener('input', updateState, false);
-            // Render the first time, with default elements
             updateState.bind(form)();
           }
           touchInit(canvas, state, localState, () => updateGLState(state, localState));
