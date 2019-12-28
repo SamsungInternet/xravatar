@@ -81,7 +81,7 @@
         import { renderGL } from './lib/threescene.js'
         import { createEmptySettings, defaultValues } from './lib/schema.js';
         import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
-        import { storeAvatar, getAvatar } from './lib/storage.js';
+        import { storeAvatar, getLocalState, getState } from './lib/storage.js';
         import { init as touchInit } from './lib/touch.js';
         import './node_modules/localforage/dist/localforage.min.js';
 
@@ -113,11 +113,15 @@
           const renderUIFn = renderUI(window.uitarget, gltfScene);
           const updateGLState = renderGL(canvas, gltfScene);
 
-          const state = new Map(Object.entries(await getAvatar() || {}));
+          const state = await getState();
+          const localState = await getLocalState();
+
           const {categoryForms, categoryTabs} = renderUIFn(state);
           async function updateState() {
             const form = this;
-            const data = [...new FormData(form).entries()];
+
+            // Any items beginning with '_' are ignored
+            const data = new FormData(form).entries();
             for (const [category, selectedItem] of data) {
               if (selectedItem) {
                 const setting = createEmptySettings(categories[category].childMap[selectedItem]);
@@ -127,8 +131,8 @@
                 state.delete(category);
               }
             }
-            renderUIFn(state);
-            updateGLState(state);
+            renderUIFn(state, localState);
+            updateGLState(state, localState);
             await storeAvatar(Object.fromEntries(state.entries()));
           }
           for (const form of categoryForms) {
@@ -136,7 +140,7 @@
             // Render the first time, with default elements
             updateState.bind(form)();
           }
-          touchInit(canvas, state);
+          touchInit(canvas, state, localState, () => updateGLState(state, localState));
           window.addEventListener('hashchange', () => renderUIFn(state), false);
         }());
     </script>
