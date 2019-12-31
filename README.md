@@ -69,3 +69,8 @@ git add -f node_modules/path/to/file.js
 ```
 
 This is because `node_modules` is under gitignore and we only want to include the files which we are using on the client
+
+## Attributions
+
+Part of the dummy 3D model is from https://poly.google.com/view/549TcOnfEOC by Wuttidech Tarbsuntea
+
