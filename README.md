@@ -48,6 +48,16 @@ This will be 100% client side only.
     <td>0.7</td>
 </tr>
 <tr>
+    <td><b>xravatar_minScale</b></td>
+    <td>Minimum Scale an object can be scaled</td>
+    <td>0</td>
+</tr>
+<tr>
+    <td><b>xravatar_maxScale</b></td>
+    <td>Maximum Scale an object can be scaled</td>
+    <td>0.7</td>
+</tr>
+<tr>
     <td><b>xravatar_canMirror</b></td>
     <td>Whether an object can be mirrored.</td>
     <td>0</td>
