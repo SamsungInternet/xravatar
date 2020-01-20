@@ -1304,5 +1304,9 @@ async function getAvatar(url) {
   }
 }
 
-export { AvatarLoader, checkURL, getAvatar };
+function avatarToThreeMesh(avatar) {
+  console.log(avatar);
+}
+
+export { AvatarLoader, avatarToThreeMesh, checkURL, getAvatar };
 //# sourceMappingURL=xravatar.three.js.map
