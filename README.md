@@ -29,13 +29,18 @@ This will be 100% client side only.
 </tr>
 <tr>
     <td><b>xravatar_minCount</b></td>
-    <td>On top level, minimum number of children allowed</td>
+    <td>Minimum number of children allowed</td>
     <td>0</td>
 </tr>
 <tr>
     <td><b>xravatar_maxCount</b></td>
-    <td>On top level, max number of children allowed</td>
+    <td>Max number of children allowed</td>
     <td>1</td>
+</tr>
+<tr>
+    <td><b>xravatar_canMove</b></td>
+    <td>Whether an object can be moved</td>
+    <td>0.0</td>
 </tr>
 <tr>
     <td><b>xravatar_minR</b></td>
