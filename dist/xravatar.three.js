@@ -53886,7 +53886,7 @@ async function getAvatar(url) {
 
 async function avatarToThreeMesh(avatar) {
   console.log(avatar);
-  const gltfPath = avatar.modelURL;
+  const gltfPath = avatar.data.modelURL;
   const {scene: gltfScene} = await new Promise(resolve => loader.load(gltfPath, resolve));
   return gltfScene;
 }
