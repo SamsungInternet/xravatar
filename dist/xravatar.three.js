@@ -1459,6 +1459,10 @@ async function getAvatar(url) {
     // removes the iframe
     avatarLoader.cleanUp();
     return avatar;
+  } else {
+
+    // removes the iframe
+    avatarLoader.cleanUp();
   }
 }
 
