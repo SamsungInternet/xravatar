@@ -1446,15 +1446,18 @@ async function getAvatar(url) {
   // Creates an iframe to get permission or to prompt the user to make an avatar 
   let test = await avatarLoader.attemptLoad();
 
-  // removes the iframe
-  avatarLoader.cleanUp();
-
   if (test.result === false) {
+
+    // removes the iframe
+    avatarLoader.cleanUp();
     throw Error(test.message);
   } else if (test.result === true) {
 
     // Uses the same iframe to load the avatar
     const avatar = await avatarLoader.getAvatarAsJSON();
+
+    // removes the iframe
+    avatarLoader.cleanUp();
     return avatar;
   }
 }
