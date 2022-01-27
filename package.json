@@ -22,7 +22,7 @@
     "hyperhtml": "^2.31.6",
     "localforage": "^1.7.3",
     "lzma": "^2.3.2",
-    "three": "^0.111.0"
+    "three": "^0.137.0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^6.0.0",
